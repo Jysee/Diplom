@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Small_Uncorrelated_a50.pt,0.7861998640380693,0.9252032520325203,0.7766151046405824,13.982154846191406

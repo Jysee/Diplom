@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Large_Uncorrelated_a75.pt,0.8109241574453034,1.0,0.8109241574453034,99.6119613647461

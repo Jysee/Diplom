@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Medium_Weak_a25.pt,0.6810635376357509,0.97876576,0.89876776,20.56

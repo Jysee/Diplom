@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Medium_Uncorrelated_a25.pt,0.7415716096324462,0.6866606982990152,0.6993920972644377,26.120912551879883

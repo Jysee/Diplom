@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Small_Strong_a25.pt,0.8796736913664174,0.9098591549295775,0.8511198945981555,5.020528793334961

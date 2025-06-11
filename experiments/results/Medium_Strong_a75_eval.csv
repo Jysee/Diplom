@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Medium_Strong_a75.pt,0.8594423320659063,1.0,0.8594423320659063,43.49513244628906

@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Large_Strong_a25.pt,0.9443686524177657,0.9122282888637065,0.9726493848857645,33.80662536621094

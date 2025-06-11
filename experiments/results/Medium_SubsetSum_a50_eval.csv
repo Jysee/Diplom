@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Medium_SubsetSum_a50.pt,0.9144486692015209,0.9242465381482488,0.8957894736842106,19.485933303833008

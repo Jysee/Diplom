@@ -1,0 +1,18 @@
+tag: Medium_Inverse_a75
+seed: 42
+gen:
+  n_min: 60
+  n_max: 100
+  w_max: 100
+  v_max: 100
+  corr: inverse
+  alpha: 0.75
+  n_instances: 100
+model:
+  layers: 2
+  hidden: 256
+  dropout: 0.3
+train:
+  lr: 0.0003
+  batch_size: 128
+  patience: 15

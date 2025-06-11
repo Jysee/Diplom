@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Large_Weak_a50.pt,0.6031391248199474,0.6058718861209964,0.6049151204105804,67.28733825683594

@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Large_SubsetSum_a75.pt,0.7363953312111566,1.0,0.7363953312111566,100.73623657226562

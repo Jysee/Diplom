@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Medium_Inverse_a50.pt,0.7095057034220532,1.0,0.7067553735926305,40.048118591308594

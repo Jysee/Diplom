@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Large_Inverse_a25.pt,0.9408316911727553,0.9221180591325847,0.9556907964979714,82.46670532226562

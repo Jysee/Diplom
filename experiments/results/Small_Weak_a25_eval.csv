@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Small_Weak_a25.pt,0.6792635658914729,0.754,0.820,16.9432

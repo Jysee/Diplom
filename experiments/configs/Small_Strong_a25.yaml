@@ -1,0 +1,18 @@
+tag: Small_Strong_a25
+seed: 42
+gen:
+  n_min: 20
+  n_max: 40
+  w_max: 100
+  v_max: 100
+  corr: strongly
+  alpha: 0.25
+  n_instances: 100
+model:
+  layers: 2
+  hidden: 256
+  dropout: 0.3
+train:
+  lr: 0.0003
+  batch_size: 128
+  patience: 15

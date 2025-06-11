@@ -1,0 +1,2 @@
+model,accuracy,recall,precision,avg_predicted_value
+Small_Inverse_a75.pt,0.8487423521414004,1.0,0.8487423521414004,15.352599143981934
