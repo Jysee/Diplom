@@ -5,7 +5,7 @@ from train import KnapsackRNN           # класс модели из ваше�
 
 # ---------- 1. загрузка модели ----------
 DEVICE = "cpu"                          # 'cuda' если есть GPU-сборка
-model_path = "models/Large_Inverse_a75.pt"
+model_path = "models/Large_Inverse_a50.pt"
 
 model = KnapsackRNN()                  # параметры по умолчанию
 model.load_state_dict(torch.load(model_path, map_location=DEVICE))
@@ -31,24 +31,20 @@ mask = torch.ones(1, n, dtype=torch.bool).to(DEVICE)
 
 # ---------- 3. инференс ----------
 with torch.no_grad():
-    probs = model(X, mask)[0].cpu().numpy()       # shape (n,)
-
-# бинаризуем порогом 0.5
-y_pred = (probs > 0.5).astype(int)
+    probs = model(X, mask)[0].cpu().numpy()   # (n,)
 
 idx = np.argsort(-probs)
-cap = capacity
-y_pred = np.zeros_like(probs, dtype=int)
+y_mask   = np.zeros_like(probs, dtype=int)
+cap_left = capacity
+
 for i in idx:
-    if weights[i] <= cap:
-        y_pred[i] = 1
-        cap -= weights[i]
+    if w[i] <= cap_left:
+        y_mask[i] = 1
+        cap_left -= w[i]
 
-
-# ---------- 4. вывод результата ----------
-chosen = [i for i, flag in enumerate(y_pred) if flag]
-total_w = sum(w[i] for i in chosen)
-total_v = sum(v[i] for i in chosen)
+chosen  = np.where(y_mask == 1)[0].tolist()
+total_w = w[chosen].sum()
+total_v = v[chosen].sum()
 
 print("Выбранные индексы :", chosen)
 print("Суммарный вес     :", total_w, "/", capacity)
