@@ -28,7 +28,7 @@ alphas = [0.25, 0.50, 0.75]
 
 # базовые гиперпараметры модели/обучения
 model_defaults = dict(layers=2, hidden=256, dropout=0.3)
-train_defaults = dict(lr=3e-4, batch_size=128, patience=15)
+train_defaults = dict(lr=3e-4, batch_size=32, patience=15)
 
 for g_name, c_name, a in itertools.product(groups, corr_types, alphas):
     tag = f"{g_name}_{c_name}_a{int(a*100):02d}"

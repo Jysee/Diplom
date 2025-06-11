@@ -14,5 +14,5 @@ model:
   dropout: 0.3
 train:
   lr: 0.0003
-  batch_size: 128
+  batch_size: 32
   patience: 15

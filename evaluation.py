@@ -13,6 +13,27 @@ from sklearn.metrics import accuracy_score, recall_score, precision_score
 from train import KnapsackDataset, KnapsackRNN, pad_collate
 
 
+# ---------- greedy-fix пост-обработка ----------------------------------------
+def pack_until_full(prob: torch.Tensor, w_ratio: torch.Tensor) -> torch.Tensor:
+    """
+    Возвращает бинарную маску (0/1) такой же длины, что и prob,
+    набирая предметы по убыванию вероятности, пока суммарный вес
+    (w_ratio) не превысит 1.0.
+    prob, w_ratio : shape (T,), на CPU
+    """
+    idx_sorted = torch.argsort(prob, descending=True)
+    take = torch.zeros_like(prob, dtype=torch.float32)
+    capacity_left = 1.0
+    for i in idx_sorted:
+        wi = float(w_ratio[i])
+        if wi <= capacity_left:
+            take[i] = 1.0
+            capacity_left -= wi
+    return take
+
+
+
+
 # ---------- базовая функция --------------------------------------------------
 def evaluate(model_path: str,
              dataset_path: str,
@@ -37,7 +58,14 @@ def evaluate(model_path: str,
     with torch.no_grad():
         for X, Y_true, mask in loader:
             X, Y_true, mask = X.to(device), Y_true.to(device), mask.to(device)
-            Y_pred = (model(X, mask) > 0.5).float()
+            Y_prob = model(X, mask)  # вероятности (B,T)
+            Y_pred_list = []
+            for b in range(X.size(0)):
+                # канал 0 содержит w_i / C
+                w_ratio = X[b, :, 0].cpu()
+                prob = Y_prob[b].cpu()
+                Y_pred_list.append(pack_until_full(prob, w_ratio))
+            Y_pred = torch.stack(Y_pred_list).to(device)  # (B,T) бинарная маска
 
             # --- плоские метки (без паддинга)
             all_pred.append(Y_pred[mask].cpu().numpy())
@@ -55,7 +83,7 @@ def evaluate(model_path: str,
     return dict(
         accuracy=float(accuracy_score(truths, preds)),
         recall=float(recall_score(truths, preds)),
-        precision=float(precision_score(truths, preds)),
+        precision=float(precision_score(truths, preds, zero_division=0)),
         avg_predicted_value=float(np.concatenate(all_value).mean())
     )
 

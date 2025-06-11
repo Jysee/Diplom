@@ -18,6 +18,9 @@ from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+LAMBDA_CAP = 0       # сила штрафа; подбирается на валидации
+
+
 
 # --- точный DP-решатель для 0/1 KP (нужен для «золотой» маски) ---
 def solve_knapsack_dp(w, v, C):
@@ -40,10 +43,14 @@ class KnapsackDataset(Dataset):
     def __init__(self, instances):
         self.items = []
         for inst in instances:
+            # --- кеш: вычислять DP только один раз ---
+            if 'mask_opt' not in inst:  # NEW
+                inst['mask_opt'] = solve_knapsack_dp(
+                    inst['weights'], inst['values'], inst['capacity'])
             w = np.array(inst["weights"], dtype=np.int32)
-            v = np.array(inst["values"],  dtype=np.int32)
+            v = np.array(inst["values"], dtype=np.int32)
             cap = int(inst["capacity"])
-            y = solve_knapsack_dp(w, v, cap)              # оптимальная маска
+            y = inst['mask_opt'].astype(np.float32)             # оптимальная маска
             # канал 0:  вес / capacity    (0…1)
             # канал 1:  ценность / max(v) (0…1)
             # канал 2:  «константа 1» — маркер доступной ёмкости
@@ -106,21 +113,29 @@ def train():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
     data_p = Path(f"data/{tag}.json")  # >>> REPLACE
     inst = json.loads(data_p.read_text())
     tr, te = train_test_split(inst, test_size=0.15, random_state=42)
     tr, va = train_test_split(tr,  test_size=0.1765, random_state=42)  # 70/15/15
 
-    dl = lambda xs,shuf: DataLoader(KnapsackDataset(xs), tcfg["batch_size"], shuffle=shuf,
-                                    collate_fn=pad_collate, num_workers=2)
+    # ---- берём весь датасет одним батчем и без дополнительных воркеров
+    batch_sz = len(tr)  # train экземпляры
+    dl = lambda xs, shuf: DataLoader(KnapsackDataset(xs), batch_sz,
+                                     shuffle=shuf,
+                                     collate_fn=pad_collate, num_workers=0)
+
     train_loader, val_loader = dl(tr,True), dl(va,False)
 
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    cap_alpha = torch.tensor(cfg['gen']['alpha'], device=dev)  # константа α
+
     net = KnapsackRNN(
         inp=3,
         hid=mcfg["hidden"],
         layers=mcfg["layers"],
         drop=mcfg["dropout"]).to(dev)  # >>> REPLACE дефолты
+
 
     opt = optim.AdamW(net.parameters(), lr=tcfg["lr"], weight_decay=5e-4)
     sched = optim.lr_scheduler.CosineAnnealingWarmRestarts(opt,
@@ -138,7 +153,16 @@ def train():
             X,Y,M = X.to(dev),Y.to(dev),M.to(dev)
             opt.zero_grad()
             pred = net(X,M)
-            loss = (loss_fn(pred,Y)*M.float()).sum()/M.sum()
+            # BCELoss только на допустимых позициях
+            bce = (loss_fn(pred, Y) * M.float()).sum() / M.sum()
+
+            # --- штраф за превышение ёмкости ---
+            # восстанавливаем реальные веса:  w_i = (w_i/C) * capacity
+            weights_real = X[..., 0] * cap_alpha
+            overload = torch.relu((pred * weights_real).sum(dim=1) - cap_alpha)
+            penalty = (overload ** 2).mean()
+
+            loss = bce + LAMBDA_CAP * penalty
             loss.backward(); nn.utils.clip_grad_norm_(net.parameters(),1.0)
             opt.step(); sched.step(epoch-1+step/len(train_loader))
             tl += loss.item()*X.size(0)
@@ -150,7 +174,15 @@ def train():
             for X,Y,M in val_loader:
                 X,Y,M = X.to(dev),Y.to(dev),M.to(dev)
                 pred = net(X,M)
-                loss = (loss_fn(pred,Y)*M.float()).sum()/M.sum()
+                bce = (loss_fn(pred, Y) * M.float()).sum() / M.sum()
+
+                # --- штраф за превышение ёмкости ---
+                # восстанавливаем реальные веса:  w_i = (w_i/C) * capacity
+                weights_real = X[..., 0] * cap_alpha  # (B,T)
+                overload = torch.relu((pred * weights_real).sum(dim=1) - cap_alpha)  # (B,)
+                penalty = (overload ** 2).mean()  # скаляр
+
+                loss = bce + LAMBDA_CAP * penalty
                 vl += loss.item()*X.size(0)
         vl /= len(val_loader.dataset)
 
